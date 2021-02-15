@@ -1,0 +1,51 @@
+name: sample-app
+recipe: laravel
+
+compose:
+  - docker-compose.yml
+
+config:
+  php: '7.4'
+  webroot: public
+  xdebug: false
+  via: nginx
+  database: mariadb
+  cache: redis:5
+  composer_version: 2-latest
+services:
+  pma:
+    type: phpmyadmin
+    overrides:
+      environment:
+        PMA_HOST: database
+  node:
+    type: node
+  mailhog:
+    type: mailhog:v1.0.0
+    portforward: true
+    hogfrom:
+      - appserver
+  appserver:
+    type: php
+tooling:
+  npm:
+    service: node
+  yarn:
+    service: node
+  build:
+    service: database
+    description: Create phpunit database
+    cmd:
+      - mysql -u root -e "CREATE DATABASE IF NOT EXISTS sample_phpunit;"
+      - mysql -u root -e "GRANT ALL PRIVILEGES ON *.* TO '*';"
+      - echo 'Create successfully !'
+  phpunit:
+    service: appserver
+    cmd: vendor/bin/phpunit
+  redis-cli:
+    service: cache
+proxy:
+  pma:
+    - pma-sample.lndo.site
+  mailhog:
+    - mailhog-sample.lndo.site
